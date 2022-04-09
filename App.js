@@ -1,5 +1,4 @@
 import {StyleSheet, StatusBar} from 'react-native';
-import VerticalSlider from "./src/components/vertical_slider/VerticalSlider";
 import {SafeAreaView} from "react-native";
 import NavigationWrapper from "./src/features/navigation_wrapper/NavigationWrapper";
 
@@ -16,6 +15,5 @@ export default function App() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginTop:StatusBar.currentHeight,
     },
 })
