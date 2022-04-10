@@ -14,12 +14,11 @@ import PlayBtn from "../../media/icons/PlayBtn";
 const height = Math.round(Dimensions.get("window").height)
 
 
-const VerticalSlider = ({resultSubmitVisible}) => {
-
+const VerticalSlider = ({onSlideChange,data,resultSubmitVisible}) => {
     const scrollViewRef = useRef()
     const visibility = useSharedValue(0)
     const video = React.useRef([]);
-    const [totalSlides, setTotalSlides] = useState(3)
+    const totalSlides = data.length
     const [currentSlide, setCurrentSlide] = useState(0)
     useEffect(()=>{
         if (resultSubmitVisible){
@@ -110,103 +109,73 @@ const VerticalSlider = ({resultSubmitVisible}) => {
         };
     });
     useEffect(()=>{
-        video.current[0].video.playAsync()
-        video.current[0].playing = true
+        if (video.current[0]?.video){
+            video.current[0].video.playAsync()
+            video.current[0].playing = true
+        }
     },[video])
+
+    useEffect(()=>{
+        if (video?.current[currentSlide])
+             onSlideChange(video?.current[currentSlide])
+    },[video,currentSlide])
     return (
 
         <GestureHandlerRootView style={{flex: 1}}>
             <PanGestureHandler onGestureEvent={panGestureEvent} onHandlerStateChange={panGestureEventChange}>
                 <ScrollView ref={ref => scrollViewRef.current = ref} contentContainerStyle={{flexGrow: 1}}
                             style={[styles.scrollContainer]}>
-                    <View style={{
-                        width: "100%",
-                        height: height,
-                        position: "relative"
-                    }}>
-                        <TouchableOpacity onPress={()=>{
-                            console.log(video.current[0].playing);
-                            if (!video.current[0].playing){
-                                video.current[0].video.playAsync()
-                                video.current[0].playing = true
-                                visibility.value = 0
-                            }else{
-                                video.current[0].video.pauseAsync()
-                                video.current[0].playing = false
-                                visibility.value = 1
-                            }
+                    {data && data.map((el, ind)=>{
+                        return <View key={ind} style={{
+                            width: "100%",
+                            height: height,
+                            position: "relative"
                         }}>
-                            <Video
-                                ref={ref => video.current[0] = {
-                                    video:ref,
-                                    playing:false
-                                }}
-                                style={{
-                                    width:"100%",
-                                    height:"100%"
-                                }}
-                                source={{
-                                    uri: 'http://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4',
-                                }}
-                                useNativeControls={false}
-                                resizeMode="cover"
-                                isLooping
-                            />
-                            <Animated.View style={[styles.playBtn,animatedStyles]}>
-                                <PlayBtn/>
-                            </Animated.View>
+                            <TouchableOpacity onPress={()=>{
+                                if (!video.current[ind].playing){
+                                    video.current[ind].video.playAsync()
+                                    video.current[ind].playing = true
+                                    visibility.value = 0
+                                }else{
+                                    video.current[ind].video.pauseAsync()
+                                    video.current[ind].playing = false
+                                    visibility.value = 1
+                                }
+                            }}>
+                                <Video
+                                    ref={ref => video.current[ind] = {
+                                        video:ref,
+                                        playing:false,
+                                        translation:el.en_translation
+                                    }}
+                                    style={{
+                                        width:"100%",
+                                        height:"100%"
+                                    }}
+                                    source={{
+                                        uri: "http://10.17.64.60:8000/static/"+el.link,
+                                    }}
+                                    useNativeControls={false}
+                                    resizeMode="cover"
+                                    isLooping
+                                />
+                                <Animated.View style={[styles.playBtn,animatedStyles]}>
+                                    <PlayBtn/>
+                                </Animated.View>
 
-                        </TouchableOpacity>
-
-
-                    </View>
-                    <View style={{
-                        width: "100%",
-                        height: height,
-                        position: "relative"
-                    }}>
-                        <TouchableOpacity onPress={()=>{
-                            if (!video.current[1].playing){
-                                video.current[1].video.playAsync()
-                                video.current[1].playing = true
-                                visibility.value = 0
-                            }else{
-                                video.current[1].video.pauseAsync()
-                                video.current[1].playing = false
-                                visibility.value = 1
-                            }
-                        }}>
-                            <Video
-                                ref={ref => video.current[1] = {
-                                    video:ref,
-                                    playing:false
-                                }}
-                                style={{
-                                    width:"100%",
-                                    height:"100%"
-                                }}
-                                source={{
-                                    uri: 'http://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4',
-                                }}
-                                useNativeControls={false}
-                                resizeMode="cover"
-                                isLooping
-                            />
-                            <Animated.View style={[styles.playBtn,animatedStyles]}>
-                                <PlayBtn/>
-                            </Animated.View>
-
-                        </TouchableOpacity>
+                            </TouchableOpacity>
 
 
-                    </View>
-
+                        </View>
+                    })}
 
                 </ScrollView>
             </PanGestureHandler>
         </GestureHandlerRootView>
     );
 };
+
+
 
 const styles = StyleSheet.create({
     scrollContainer: {

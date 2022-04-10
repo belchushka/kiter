@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import ContentView from "../../components/content_view/ContentView";
 import ContentContainer from "../../components/content_container/ContentContainer";
 import VerticalSlider from "../../components/vertical_slider/VerticalSlider";
-import {TouchableOpacity, Text, StyleSheet, View, ImageBackground} from "react-native";
+import {TouchableOpacity, Text, StyleSheet, View, ImageBackground,ActivityIndicator} from "react-native";
 import ShadowBg from "../../media/imgs/ShadowBg.png"
 import BurgerMenu from "../../media/icons/BurgerMenu";
 import Subtitles from "../../media/icons/Subtitles";
@@ -10,10 +10,19 @@ import VoicButton from "../../components/voice_button/VoicButton";
 import SubmitVoiceResult from "../../components/submit_voice_result/SubmitVoiceResult";
 import RemoveBtn from "../../media/icons/RemoveBtn";
 import SubmitBtn from "../../media/icons/SubmitBtn";
+import {useDispatch, useSelector} from "react-redux";
+import {checkValidity, getVideos} from "../../store/actions/videoActions";
+import ResultModal from "../../components/result_modal/ResultModal";
 
 const FeedScreen = () => {
     const [resultSubmitVisible, setResultSubmitVisible] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [resultModalVisible, setResultModalVisible] = useState(false)
     const [speechEnded, setSpeechEnded] = useState(false)
+    const [simularity, setSimularity] = useState(0)
+    const videos = useSelector(state=>state.video.videos)
+    const [currentPairString, setCurrentPairString] = useState("")
+    const dispatch = useDispatch()
     const [result, setResult] = useState([])
     const onVoiceStart = () => {
         setResultSubmitVisible(true)
@@ -31,6 +40,25 @@ const FeedScreen = () => {
     const onResult = (data) => {
         setResult(data)
     }
+
+    const fetch = useCallback(()=>{
+        dispatch(getVideos())
+
+    },[])
+
+    const onVoiceInputSubmit = useCallback(async ()=>{
+        setLoading(true)
+        const data = await dispatch(checkValidity({
+            user_string:result[0],
+            pair_string: currentPairString
+        }))
+        setResultSubmitVisible(false)
+        setSimularity(data.simularity)
+        setResultModalVisible(true)
+        setLoading(false)
+    },[dispatch, result, currentPairString])
+
+    useEffect(fetch,[fetch])
     return (
         <ContentView>
             <View style={styles.topNavigation}>
@@ -54,34 +82,38 @@ const FeedScreen = () => {
                     </View>
                 </ImageBackground>
             </View>
-            <VerticalSlider resultSubmitVisible={resultSubmitVisible}/>
+            <VerticalSlider onSlideChange={video=>setCurrentPairString(video.translation)} data={videos} resultSubmitVisible={resultSubmitVisible}/>
             <View style={styles.bottomActions}>
                 <ImageBackground resizeMode="stretch" style={{
                     width: "100%",
                     height: "100%"
                 }} source={ShadowBg}>
                     <ContentContainer style={styles.bottomNavigationWrapper}>
-                        {resultSubmitVisible ? <TouchableOpacity onPress={()=>{
+                        {!loading && (resultSubmitVisible ? <TouchableOpacity onPress={()=>{
                                 setResultSubmitVisible(false)
                             }}><RemoveBtn/></TouchableOpacity> :
-                            <TouchableOpacity><BurgerMenu/></TouchableOpacity>}
+                            <TouchableOpacity><BurgerMenu/></TouchableOpacity>)}
 
-                        <VoicButton speechRecording={resultSubmitVisible} onStart={onVoiceStart} onEnd={onVoiceEnd} onResult={onResult}
-                                    onPartialResult={onPartialResults}/>
+                        {
+                            !loading ?<VoicButton speechRecording={resultSubmitVisible} onStart={onVoiceStart} onEnd={onVoiceEnd} onResult={onResult}
+                                                  onPartialResult={onPartialResults}/> : <ActivityIndicator size="large" color={"#AA80F9"}/>
+                        }
 
-                        {resultSubmitVisible ?
-                            <TouchableOpacity >
+
+                        {!loading && (resultSubmitVisible  ?
+                            <TouchableOpacity onPress={onVoiceInputSubmit}>
                                 <SubmitBtn/>
                             </TouchableOpacity>
                             :
                             <TouchableOpacity>
                                 <Subtitles/>
-                            </TouchableOpacity>}
+                            </TouchableOpacity>)}
 
                     </ContentContainer>
                 </ImageBackground>
             </View>
             <SubmitVoiceResult text={[result[0]]} visible={resultSubmitVisible}/>
+            <ResultModal visible={resultModalVisible} text={currentPairString} simularity={simularity} closeModal={()=>{setResultModalVisible(false)}}/>
         </ContentView>
     );
 };
